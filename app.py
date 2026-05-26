@@ -6,6 +6,11 @@ import streamlit as st
 import time
 import re
 import plotly.graph_objects as go
+from ingest import ingest_documents
+
+if not os.path.exists("chroma_db"):
+    print("Creating embeddings...")
+    ingest_documents()
 
 st.set_page_config(
     page_title="FinSight AI— Financial Intelligence System",

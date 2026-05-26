@@ -3,7 +3,7 @@ from src.chunker import chunk_pages
 from src.embedder import store_chunks
 
 
-def run_ingestion():
+def ingest_documents():
     print("🚀 Starting ingestion...\n")
 
     # Step 1: Extract
@@ -19,4 +19,4 @@ def run_ingestion():
 
 
 if __name__ == "__main__":
-    run_ingestion()
+    ingest_documents()

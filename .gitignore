@@ -20,3 +20,5 @@ Thumbs.db
 
 # Streamlit cache
 .streamlit/secrets.toml
+
+chroma_db/
