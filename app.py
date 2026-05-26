@@ -1,19 +1,26 @@
-# app.py — Financial Intelligence System UI
 import sys
 import os
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-import streamlit as st
 import time
 import re
+
+import streamlit as st
 import plotly.graph_objects as go
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
+from download_data import download_reports
 from ingest import ingest_documents
 
+# Download PDFs automatically
+download_reports()
+
+# Create embeddings if missing
 if not os.path.exists("chroma_db"):
     print("Creating embeddings...")
     ingest_documents()
 
 st.set_page_config(
-    page_title="FinSight AI— Financial Intelligence System",
+    page_title="FinSight AI — Financial Intelligence System",
     page_icon="📊",
     layout="wide",
     initial_sidebar_state="expanded"

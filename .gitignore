@@ -22,3 +22,4 @@ Thumbs.db
 .streamlit/secrets.toml
 
 chroma_db/
+data/reports/
