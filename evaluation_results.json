@@ -1,0 +1,236 @@
+{
+  "classifier": {
+    "passed": 11,
+    "total": 11,
+    "pct": 100.0,
+    "details": [
+      {
+        "query": "What is Infosys revenue?",
+        "expected": "simple_qa",
+        "got": "simple_qa",
+        "status": "PASS",
+        "time": 4.95053505897522
+      },
+      {
+        "query": "Compare Infosys Q1 and Q2",
+        "expected": "comparison",
+        "got": "comparison",
+        "status": "PASS",
+        "time": 0.8179662227630615
+      },
+      {
+        "query": "Why did Infosys revenue increase?",
+        "expected": "reasoning",
+        "got": "reasoning",
+        "status": "PASS",
+        "time": 1.2545320987701416
+      },
+      {
+        "query": "Summarize Infosys Q2",
+        "expected": "summarization",
+        "got": "summarization",
+        "status": "PASS",
+        "time": 12.145052671432495
+      },
+      {
+        "query": "What is Infosys revenue trend?",
+        "expected": "trend",
+        "got": "trend",
+        "status": "PASS",
+        "time": 2.808871030807495
+      },
+      {
+        "query": "Compare Apple vs Infosys revenue",
+        "expected": "comparison",
+        "got": "comparison",
+        "status": "PASS",
+        "time": 5.2412497997283936
+      },
+      {
+        "query": "What caused Apple growth in Q2?",
+        "expected": "reasoning",
+        "got": "reasoning",
+        "status": "PASS",
+        "time": 38.12597870826721
+      },
+      {
+        "query": "Give me overview of Infosys Q1",
+        "expected": "summarization",
+        "got": "summarization",
+        "status": "PASS",
+        "time": 17.07182216644287
+      },
+      {
+        "query": "What is revenue?",
+        "expected": "simple_qa",
+        "got": "simple_qa",
+        "status": "PASS",
+        "time": 14.994716167449951
+      },
+      {
+        "query": "Compare Q1 and Q2",
+        "expected": "comparison",
+        "got": "comparison",
+        "status": "PASS",
+        "time": 4.859055519104004
+      },
+      {
+        "query": "Why did revenue increase?",
+        "expected": "reasoning",
+        "got": "reasoning",
+        "status": "PASS",
+        "time": 38.669673442840576
+      }
+    ]
+  },
+  "simple_qa": {
+    "passed": 7,
+    "total": 7,
+    "pct": 100.0,
+    "details": [
+      {
+        "query": "What is Infosys revenue in Q2?",
+        "status": "PASS",
+        "keyword_score": "3/3",
+        "numeric_ok": true,
+        "time": 18.379260301589966
+      },
+      {
+        "query": "What is Infosys revenue in Q1?",
+        "status": "PASS",
+        "keyword_score": "3/3",
+        "numeric_ok": true,
+        "time": 15.831771612167358
+      },
+      {
+        "query": "What is Apple Q2 revenue?",
+        "status": "PASS",
+        "keyword_score": "3/3",
+        "numeric_ok": true,
+        "time": 14.521810293197632
+      },
+      {
+        "query": "What is Apple Q1 revenue?",
+        "status": "PASS",
+        "keyword_score": "3/3",
+        "numeric_ok": true,
+        "time": 16.539447784423828
+      },
+      {
+        "query": "What is Infosys operating margin in Q2?",
+        "status": "PASS",
+        "keyword_score": "2/3",
+        "numeric_ok": true,
+        "time": 22.69920039176941
+      },
+      {
+        "query": "What is Infosys free cash flow in Q1?",
+        "status": "PASS",
+        "keyword_score": "2/3",
+        "numeric_ok": true,
+        "time": 19.60001850128174
+      },
+      {
+        "query": "What were Infosys large deal wins in Q3?",
+        "status": "PASS",
+        "keyword_score": "3/3",
+        "numeric_ok": true,
+        "time": 21.847119331359863
+      }
+    ]
+  },
+  "comparison": {
+    "passed": 2,
+    "total": 2,
+    "pct": 100.0,
+    "details": [
+      {
+        "query": "Compare Infosys Q1 and Q2 revenue",
+        "status": "PASS",
+        "keyword_score": "4/4",
+        "time": 0.6794819831848145
+      },
+      {
+        "query": "Compare Apple Q1 and Q2 revenue",
+        "status": "PASS",
+        "keyword_score": "2/2",
+        "time": 3.029165029525757
+      }
+    ]
+  },
+  "reasoning": {
+    "passed": 2,
+    "total": 2,
+    "pct": 100.0,
+    "details": [
+      {
+        "query": "What drove Infosys revenue growth in Q2?",
+        "status": "PASS",
+        "keyword_score": "4/4",
+        "has_numbers": true,
+        "has_sources": true,
+        "time": 29.07319450378418
+      },
+      {
+        "query": "Why did Apple revenue increase in Q2?",
+        "status": "PASS",
+        "keyword_score": "4/4",
+        "has_numbers": true,
+        "has_sources": true,
+        "time": 37.32067012786865
+      }
+    ]
+  },
+  "summarization": {
+    "passed": 2,
+    "total": 2,
+    "pct": 100.0,
+    "details": [
+      {
+        "query": "Summarize Infosys Q3",
+        "status": "PASS",
+        "keyword_score": "4/4",
+        "has_highlights": true,
+        "time": 17.059213638305664
+      },
+      {
+        "query": "Summarize Apple Q2",
+        "status": "PASS",
+        "keyword_score": "2/3",
+        "has_highlights": true,
+        "time": 16.86006999015808
+      }
+    ]
+  },
+  "retrieval": {
+    "avg_precision": 0.7333333333333334,
+    "details": [
+      {
+        "query": "Infosys revenue Q2 2025",
+        "chunks_retrieved": 5,
+        "relevant_chunks": 4,
+        "precision": 0.8,
+        "retrieval_time": 0.06452250480651855
+      },
+      {
+        "query": "Apple net sales Q1 2025",
+        "chunks_retrieved": 5,
+        "relevant_chunks": 4,
+        "precision": 0.8,
+        "retrieval_time": 0.035669565200805664
+      },
+      {
+        "query": "Infosys operating margin Q3",
+        "chunks_retrieved": 5,
+        "relevant_chunks": 3,
+        "precision": 0.6,
+        "retrieval_time": 0.04834318161010742
+      }
+    ]
+  },
+  "response_time": {
+    "avg_time": 18.61256617307663,
+    "min": 3.8995134830474854,
+    "max": 37.41064810752869
+  }
+}
