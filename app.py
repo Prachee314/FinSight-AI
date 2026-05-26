@@ -4,7 +4,12 @@ import time
 import re
 
 import streamlit as st
+import streamlit as st
+import os
+
+st.write("HF SECRET CHECK:", os.getenv("GROQ_API_KEY"))
 import plotly.graph_objects as go
+
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
