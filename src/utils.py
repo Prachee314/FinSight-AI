@@ -10,7 +10,7 @@ load_dotenv()
 def get_groq_client():
     key = os.environ.get("GROQ_API_KEY")
     if not key:
-        raise ValueError("GROQ_API_KEY not found in .env")
+        raise ValueError("GROQ_API_KEY not found")
     return Groq(api_key=key)
 
 
