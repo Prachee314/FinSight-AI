@@ -6,8 +6,6 @@ import re
 import streamlit as st
 import streamlit as st
 import os
-
-st.write("HF SECRET CHECK:", os.getenv("GROQ_API_KEY"))
 import plotly.graph_objects as go
 
 
