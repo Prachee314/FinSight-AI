@@ -99,41 +99,27 @@ Ask questions such as:
 
 ## 🏗️ System Architecture
 
-Financial Reports & Press Releases (PDFs)
+```mermaid
+flowchart TD
+    A[Financial Reports & Press Releases PDFs]
+    B[PDF Extraction PyMuPDF]
+    C[Document Chunking]
+    D[Sentence Transformer Embeddings]
+    E[ChromaDB Vector Store]
+    F[Semantic Retrieval & Re-ranking]
+    G[Query Classification]
+    H[Groq LLaMA 3.1]
+    I[Financial Insights & Answers]
 
-↓
-
-PDF Extraction (PyMuPDF)
-
-↓
-
-Document Chunking
-
-↓
-
-Sentence Transformer Embeddings
-
-↓
-
-ChromaDB Vector Store
-
-↓
-
-Semantic Retrieval & Ranking
-
-↓
-
-Query Classification
-
-(Q&A / Comparison / Reasoning / Summary / Trend)
-
-↓
-
-Groq LLaMA 3.1
-
-↓
-
-Financial Insights & Answers
+    A --> B
+    B --> C
+    C --> D
+    D --> E
+    E --> F
+    F --> G
+    G --> H
+    H --> I
+```
 
 ---
 
