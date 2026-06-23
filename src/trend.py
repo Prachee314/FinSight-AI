@@ -58,11 +58,25 @@ def get_trend(query, company, quarters=None):
         q = v["quarter"]
         if q not in by_quarter:
             by_quarter[q] = v
-        else:
-            existing_val = by_quarter[q]["usd"]["value"] if by_quarter[q].get("usd") else by_quarter[q]["inr"]["value"]
-            new_val = v["usd"]["value"] if v.get("usd") else v["inr"]["value"]
-            if new_val > existing_val:
-                by_quarter[q] = v
+            continue
+
+        current = by_quarter[q]
+
+        current_score = 0
+        new_score = 0
+
+        if current.get("usd"):
+            current_score += 10
+        if current.get("inr"):
+            current_score += 10
+
+        if v.get("usd"):
+            new_score += 10
+        if v.get("inr"):
+            new_score += 10
+
+        if new_score > current_score:
+            by_quarter[q] = v
     values = list(by_quarter.values())
 
     # Sort Q1 → Q4
