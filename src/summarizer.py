@@ -18,9 +18,15 @@ def summarize(query, chunks):
 
     prompt = f"""You are a senior financial analyst.
 
-Provide a structured summary based on the context.
+Provide a structured summary based ONLY on the context below.
 
-Format:
+Rules:
+- Do NOT include a "Quarter" or "Source" line at the end — that metadata is shown separately in the UI.
+- Do NOT mention source filenames, document names, or section labels anywhere in the answer.
+- Use only numbers and facts that literally appear in the context.
+- If something isn't in the context, don't guess or invent it.
+
+Format (stop after Important Points — no extra footer lines):
 **Key Highlights:**
 - [bullet points]
 
@@ -29,9 +35,6 @@ Format:
 
 **Important Points:**
 - [risks, management comments, outlook]
-
-**Quarter:** [mention which quarter]
-**Source:** [mention source files]
 
 Context:
 {context}

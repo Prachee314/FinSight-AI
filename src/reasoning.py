@@ -60,10 +60,28 @@ def filter_by_quarters(values, query):
 
 
 # ------------------------------------------------
+# Helper: which companies actually have data in the chunks
+# ------------------------------------------------
+def companies_in_context(chunks):
+    found = set()
+    for c in chunks:
+        company = c.get("metadata", {}).get("company", "")
+        if company:
+            found.add(company.lower())
+    return found
+
+
+def companies_mentioned_in_query(query):
+    query_lower = query.lower()
+    known = ["apple", "infosys", "microsoft", "tcs", "wipro"]
+    return [c for c in known if c in query_lower]
+
+
+# ------------------------------------------------
 # MAIN REASONING FUNCTION
 # ------------------------------------------------
 def explain(query, chunks):
-    
+
     if not chunks:
         return "No data found in documents."
 
@@ -95,7 +113,7 @@ def explain(query, chunks):
         )
         v1, v2 = values[0], values[-1]
         change = v2["value"] - v1["value"]
-        percent = (change / v1["value"] * 100 
+        percent = (change / v1["value"] * 100
                   if v1["value"] != 0 else 0)
         trend = "increase" if change > 0 else "decrease"
         currency = v1.get("currency", "USD")
@@ -108,30 +126,46 @@ Numerical Data Found:
 - Change: {change:,.0f} {unit} ({percent:.2f}% {trend})
 """
 
+    # --------------------------------------------------
+    # GROUNDING CHECK — tell the LLM exactly which
+    # companies/quarters it actually has data for.
+    # This stops it from inventing numbers for a company
+    # that was asked about but never retrieved.
+    # --------------------------------------------------
+    available_companies = companies_in_context(chunks)
+    asked_companies = companies_mentioned_in_query(query)
+    missing_companies = [c for c in asked_companies if c not in available_companies]
+
+    missing_note = ""
+    if missing_companies:
+        missing_note = (
+            "\nIMPORTANT: The context below contains NO data for: "
+            + ", ".join(m.title() for m in missing_companies)
+            + ". Do NOT state any figures, percentages, or comparisons for "
+            + "these companies. Explicitly say data is not available for them."
+        )
+
     # Always call LLM regardless of numerical data
     prompt = f"""You are a senior financial analyst.
 
 Question: {query}
 
 {numerical_summary}
+{missing_note}
 
 STRICT RULES:
-- NEVER say "unable to determine"
-- NEVER say "not enough data"
-- Only explain using statements explicitly mentioned in the context.
+- Only use numbers and statements that literally appear in the context below.
+- If a number is not in the context, do not state it — say "not available in the provided data" instead.
 - Do not infer business strategies unless directly stated.
-- Use exact numbers if available
-- If numbers not found, explain qualitatively from context
-- NEVER invent initiatives, acquisitions, or projects
-- Use ONLY facts explicitly present in context
-- If a business reason is not mentioned, say "not explicitly stated in reports"
-- Do NOT use external knowledge
+- Do not invent initiatives, acquisitions, projects, or competitor figures.
+- If a business reason is not mentioned, say "not explicitly stated in reports".
+- Do NOT use external knowledge or prior training data about these companies.
+- Do NOT include a "Sources" section — sources are shown separately in the UI.
 
-Answer format:
+Answer format (do not add a Sources line):
 **Direct Answer:** [one clear sentence]
-**Supporting Numbers:** [figures from context]
-**Key Reasons:** [business explanation]
-**Sources:** [list sources]
+**Supporting Numbers:** [figures from context only]
+**Key Reasons:** [business explanation grounded in context]
 
 Context:
 {context}
@@ -144,6 +178,12 @@ Answer:"""
     )
 
     result = response.choices[0].message.content
+
+    # Safety net: strip any Sources/citation footer the model
+    # adds anyway, plus stray trailing "**" artifacts.
+    result = re.sub(r"\*\*Sources?:?\*\*.*$", "", result, flags=re.IGNORECASE | re.DOTALL)
+    result = re.sub(r"\n\*\*,?\s*[\w_\-\.]+\.pdf.*$", "", result, flags=re.IGNORECASE | re.DOTALL)
+    result = result.strip()
 
     if numerical_summary:
         return f"{numerical_summary}\n{result}"

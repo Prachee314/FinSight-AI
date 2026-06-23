@@ -71,11 +71,12 @@ def extract_revenue(chunks):
             r"|revenue from software"
             r"|net sales"
             r"|revenue)"
-            r"[\s\d\.]{0,15}"
+            r"[\s\S]{0,40}?"
             r"[₹]?\s?"
             r"([\d]{2,3}(?:,[\d]{2,3})+(?:\.\d+)?)",
-            text          # ← lowercased is fine here
-        )
+            text,
+            re.IGNORECASE
+)
         
         
         # Skip INR matches if this is an Apple chunk — Apple uses millions not crores

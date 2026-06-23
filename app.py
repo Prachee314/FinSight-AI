@@ -4,8 +4,6 @@ import time
 import re
 
 import streamlit as st
-import streamlit as st
-import os
 import plotly.graph_objects as go
 
 
@@ -46,7 +44,6 @@ html,body,[class*="css"]{ font-family:var(--sans); background-color:var(--bg); c
     font-size:0!important; width:0!important; height:0!important;
     overflow:hidden!important; color:transparent!important;
 }
-/* Show a real arrow via pseudo-element on the button */
 [data-testid="stSidebarCollapseButton"] button::after{
     content:'❮'; font-size:16px; color:#5A6480; line-height:1;
 }
@@ -100,14 +97,12 @@ html,body,[class*="css"]{ font-family:var(--sans); background-color:var(--bg); c
     position:fixed; top:0; right:0; left:300px; z-index:998;
     background:#0D0F14; border-bottom:1px solid #1A1E2E;
     padding:0.9rem 2rem 0.75rem;
-    /* When sidebar open, no left offset needed inside header */
     padding-left:2rem;
     transition:left 0.3s ease;
 }
-/* Sidebar collapsed: header starts at 0, but leave room for the open arrow button */
 body:has([data-testid="stSidebar"][aria-expanded="false"]) .fixed-header{
     left:0;
-    padding-left:72px;   /* 12px margin + 32px button + 28px gap = clear space */
+    padding-left:72px;
 }
 [data-testid="stMainBlockContainer"]{ padding-top:80px!important; }
 
@@ -178,6 +173,14 @@ QUICK_TOPICS = [
     ("YoY growth", "Compare Infosys Q4 revenue year over year"),
     ("Segments",   "What are Infosys revenue segments in Q4?"),
     ("Apple Q2",   "Summarize Apple Q2 earnings"),
+]
+
+# Real Infosys quarterly revenue (USD Million) — drives the sidebar mini trend
+INFOSYS_TREND = [
+    ("Q1", 4941),
+    ("Q2", 5076),
+    ("Q3", 5099),
+    ("Q4", 5040),
 ]
 
 # ─────────────────────────────────────────────
@@ -321,7 +324,6 @@ def render_answer(result: str, qtype: str, elapsed: float, sources: list = []):
                             key=f"comp_{elapsed}_{hash(result)}")
 
     def md_to_html(text):
-        # 1. Remove metadata lines (Quarter:, Source:, Sources:, Source File:, Section:)
         lines_raw = text.strip().splitlines()
         clean_lines = []
         for ln in lines_raw:
@@ -331,14 +333,10 @@ def render_answer(result: str, qtype: str, elapsed: float, sources: list = []):
             clean_lines.append(ln)
         text = "\n".join(clean_lines).strip()
 
-        # 2. Remove ALL inline metadata patterns — both pipe and comma separated
-        # Pattern: (Quarter: X, Source: Y, Section: Z) or (Source: X | Quarter: Y | Section: Z)
         text = re.sub(r"\s*\([^)]*(?:Quarter|Source|Section)[^)]*\)", "", text)
-        # Standalone comma-separated metadata at end of line
         text = re.sub(r",?\s*Quarter:\s*[\w_]+", "", text)
         text = re.sub(r",?\s*Section:\s*[\w_]+", "", text)
         text = re.sub(r",?\s*Source(?:s)?:\s*[^\n,)]+", "", text)
-        # Pipe-separated
         text = re.sub(r"\s*\|\s*Quarter:[^|)\n]+", "", text)
         text = re.sub(r"\s*\|\s*Section:[^|)\n]+", "", text)
 
@@ -355,17 +353,14 @@ def render_answer(result: str, qtype: str, elapsed: float, sources: list = []):
             if not line:
                 continue
 
-            # Skip metadata
             if re.match(r"^(Quarter|Source|Source File)\s*:", line, re.IGNORECASE):
                 continue
 
-            # **Bold heading** (standalone)
             if re.match(r"^\*\*.+\*\*:?\s*$", line):
                 heading = re.sub(r"\*\*(.+?)\*\*", r"\1", line).rstrip(":").strip()
                 out.append("<div style=\"" + HEADING_STYLE + "\">" + heading + "</div>")
                 continue
 
-            # Plain word heading ending with colon — only if short, no numbers/$ in it
             if (re.match(r"^[A-Za-z][A-Za-z\s\-]+:$", line)
                     and len(line) < 45
                     and "$" not in line and "%" not in line):
@@ -373,12 +368,10 @@ def render_answer(result: str, qtype: str, elapsed: float, sources: list = []):
                 out.append("<div style=\"" + HEADING_STYLE + "\">" + heading + "</div>")
                 continue
 
-            # Apply bold inline
             line = re.sub(r"\*\*(.+?)\*\*", r"<strong style=\"color:#E4E8F4;\">\1</strong>", line)
 
-            # Numbered list  "1. text"
-            if re.match(r"^\d+\.\s+", line):
-                cl = re.sub(r"^\d+\.\s+", "", line)
+            if re.match(r"^\d+\.\s*", line) and re.match(r"^\d+\.\s*\S", line):
+                cl = re.sub(r"^\d+\.\s*", "", line)
                 num = re.match(r"^(\d+)\.", line).group(1)
                 out.append(
                     "<div style=\"display:flex;gap:9px;margin:5px 0;align-items:flex-start;\">"
@@ -388,7 +381,6 @@ def render_answer(result: str, qtype: str, elapsed: float, sources: list = []):
                 )
                 continue
 
-            # Bullet  "- text" or "• text"
             if re.match(r"^[-•]\s+", line):
                 cl = re.sub(r"^[-•]\s+", "", line)
                 out.append(
@@ -398,7 +390,6 @@ def render_answer(result: str, qtype: str, elapsed: float, sources: list = []):
                 )
                 continue
 
-            # Plain text
             out.append("<p style=\"margin:5px 0;color:#C0CAE8;\">" + line + "</p>")
 
         return "\n".join(out)
@@ -451,6 +442,60 @@ def render_header():
     }();
     </script>
     """, unsafe_allow_html=True)
+
+
+def render_infosys_trend_bar():
+    """
+    Modern mini trend chart for the sidebar.
+    Uses real Infosys revenue and normalizes bar heights between
+    35%-100% (instead of raw % of max) so even the lowest quarter
+    is clearly visible — this fixes the "half cut off" look that
+    happened when bars were too close in raw percentage terms.
+    """
+    values = [v for _, v in INFOSYS_TREND]
+    min_v, max_v = min(values), max(values)
+    span = max_v - min_v if max_v != min_v else 1
+
+    def norm_height(v):
+        pct = (v - min_v) / span
+        return 35 + pct * 65  # 35%-100% range, never "cut off"
+
+    overall_change = values[-1] - values[0]
+    overall_pct = (overall_change / values[0]) * 100
+
+    bars_html = ""
+    for i, (label, val) in enumerate(INFOSYS_TREND):
+        h = norm_height(val)
+        is_last = (i == len(INFOSYS_TREND) - 1)
+        is_max = (val == max_v)
+        color = "#22D3A5" if is_max else "#4F8EF7"
+        opacity = "1" if (is_max or is_last) else "0.55"
+        bars_html += (
+            f'<div style="display:flex;flex-direction:column;align-items:center;gap:6px;flex:1;">'
+            f'<span style="font-size:9px;color:#5A6480;font-weight:500;white-space:nowrap;">${val:,.0f}M</span>'
+            f'<div style="width:100%;max-width:22px;height:{h:.0f}%;'
+            f'background:{color};opacity:{opacity};border-radius:4px 4px 1px 1px;'
+            f'transition:opacity 0.2s;" title="{label} ${val:,.0f}M"></div>'
+            f'<span style="font-size:9px;color:#3A4060;font-weight:600;letter-spacing:0.3px;">{label}</span>'
+            f'</div>'
+        )
+
+    st.markdown(
+        f'<div style="background:#141720;border:1px solid #1E2438;border-radius:10px;'
+        f'padding:14px 12px 10px;">'
+        f'<div style="display:flex;align-items:flex-end;justify-content:space-between;'
+        f'gap:6px;height:64px;margin-bottom:2px;">'
+        f'{bars_html}'
+        f'</div>'
+        f'<div style="display:flex;align-items:center;justify-content:space-between;'
+        f'margin-top:10px;padding-top:10px;border-top:1px solid #1A1E2E;">'
+        f'<span style="font-size:10px;color:#5A6480;">Q1 → Q4 change</span>'
+        f'<span style="font-size:13px;font-weight:600;color:#22D3A5;">'
+        f'{"+" if overall_change >= 0 else ""}{overall_pct:.1f}%</span>'
+        f'</div>'
+        f'</div>',
+        unsafe_allow_html=True
+    )
 
 
 def render_sidebar():

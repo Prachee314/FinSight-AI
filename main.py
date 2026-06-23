@@ -254,12 +254,12 @@ def run(query, quarter_filter=None):
         return result, query_type, chunks
     
     elif query_type == "trend":
-        result = get_trend(
+        result, chunks = get_trend(
             query=query,
             company=company_filter,
             quarters=quarter_filters if quarter_filters else None
     )
-        return result, query_type, []  # ← add this
+        return result, query_type,chunks # ← add this
 
         
     # ========= SUMMARIZATION =========  Bug 1 fix

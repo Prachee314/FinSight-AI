@@ -36,11 +36,13 @@ def get_trend(query, company, quarters=None):
         all_chunks.extend(press_chunks)
         all_chunks.extend(report_chunks)
 
-    # Remove duplicates
+    # Remove duplicates — key on (quarter + first 120 chars) so chunks
+    # from different quarters with similar opening text aren't merged
     seen = set()
     unique_chunks = []
     for c in all_chunks:
-        key = c["text"][:120]
+        q_meta = c.get("metadata", {}).get("quarter", "")
+        key = f"{q_meta}::{c['text'][:120]}"
         if key not in seen:
             seen.add(key)
             unique_chunks.append(c)
@@ -49,6 +51,19 @@ def get_trend(query, company, quarters=None):
 
     if not values:
         return "No trend data found."
+
+    # Deduplicate values per quarter (keep the largest/most confident extraction)
+    by_quarter = {}
+    for v in values:
+        q = v["quarter"]
+        if q not in by_quarter:
+            by_quarter[q] = v
+        else:
+            existing_val = by_quarter[q]["usd"]["value"] if by_quarter[q].get("usd") else by_quarter[q]["inr"]["value"]
+            new_val = v["usd"]["value"] if v.get("usd") else v["inr"]["value"]
+            if new_val > existing_val:
+                by_quarter[q] = v
+    values = list(by_quarter.values())
 
     # Sort Q1 → Q4
     values = sorted(values, key=lambda x: quarter_order(x["quarter"]))
@@ -69,20 +84,39 @@ def get_trend(query, company, quarters=None):
         elif inr:
             trend_table += f"{v['quarter']}: ₹{inr['value']:,.0f} Cr\n"
 
-    # Compute overall growth
-    growth_summary = ""
-    if len(values) >= 2:
-        v1 = values[0]
-        v_last = values[-1]
-        val1 = v1["usd"]["value"] if v1.get("usd") else v1["inr"]["value"]
-        val_last = v_last["usd"]["value"] if v_last.get("usd") else v_last["inr"]["value"]
-        unit = "Million" if v1.get("usd") else "Crore"
-        overall_change = val_last - val1
-        overall_pct = (overall_change / val1 * 100) if val1 != 0 else 0
-        growth_summary = (
-            f"Overall change from {v1['quarter']} to {v_last['quarter']}: "
-            f"{overall_change:+,.0f} {unit} ({overall_pct:+.2f}%)"
+    # --------------------------------------------------------
+    # GUARD: only one quarter of data available.
+    # A "trend" needs at least 2 points — skip the LLM call
+    # entirely rather than asking it to invent best/worst/growth
+    # commentary on a single number (this caused the repeated
+    # "Q1_2025: $94,036M" filler and meaningless best=worst text).
+    # --------------------------------------------------------
+    if len(values) < 2:
+        only = values[0]
+        label = (
+            f"${only['usd']['value']:,.0f}M" if only.get("usd")
+            else f"₹{only['inr']['value']:,.0f} Cr"
         )
+        return (
+            f"Revenue Trend — {company.upper()}\n\n"
+            f"{trend_table}\n"
+            f"Only one quarter of data is currently available "
+            f"({only['quarter']}: {label}). A trend needs at least two "
+            f"quarters to compare — please check back once more data is added."
+        )
+
+    # Compute overall growth
+    v1 = values[0]
+    v_last = values[-1]
+    val1 = v1["usd"]["value"] if v1.get("usd") else v1["inr"]["value"]
+    val_last = v_last["usd"]["value"] if v_last.get("usd") else v_last["inr"]["value"]
+    unit = "Million" if v1.get("usd") else "Crore"
+    overall_change = val_last - val1
+    overall_pct = (overall_change / val1 * 100) if val1 != 0 else 0
+    growth_summary = (
+        f"Overall change from {v1['quarter']} to {v_last['quarter']}: "
+        f"{overall_change:+,.0f} {unit} ({overall_pct:+.2f}%)"
+    )
 
     # Best and worst quarters
     best = max(values, key=lambda x: x["usd"]["value"] if x.get("usd") else x["inr"]["value"])
@@ -113,17 +147,18 @@ Pre-computed facts (use exactly, do not recalculate):
 - Worst quarter: {worst_label}
 
 STRICT RULES:
-- Use ONLY the data provided above
-- DO NOT recalculate or second-guess pre-computed facts
-- DO NOT invent figures
-- For Apple: USD only, no INR conversion
-- Be concise — one line per quarter, no extra explanations
-- Do not add parenthetical notes or caveats
+- Use ONLY the data provided above.
+- DO NOT recalculate or second-guess pre-computed facts.
+- DO NOT invent figures.
+- DO NOT repeat the quarter-by-quarter figures already shown above — write commentary only, not a restated table.
+- For Apple: USD only, no INR conversion.
+- Be concise — 2-3 sentences total.
+- Do NOT add parenthetical notes, caveats, or disclaimers.
+- Do NOT mention source filenames.
 
-Write:
-1. Quarter-by-quarter trend (use exact figures)
-2. Best and worst performing quarter
-3. Overall growth conclusion
+Write a short paragraph covering:
+- Overall growth conclusion (one sentence)
+- Best and worst performing quarter (one sentence)
 """
 
     response = client.chat.completions.create(
@@ -131,9 +166,10 @@ Write:
         messages=[{"role": "user", "content": prompt}]
     )
 
-    return (
+    answer = (
         f"Revenue Trend — {company.upper()}\n\n"
         f"{trend_table}\n"
         f"{growth_summary}\n\n"
         f"{response.choices[0].message.content}"
     )
+    return answer, unique_chunks
